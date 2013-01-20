@@ -7,6 +7,7 @@ LDFLAGS = -shared -lopencv_highgui -lopencv_core -lopencv_imgproc -lopencv_highg
 
 all: OpenCV-AWK.so
 	gawk 'BEGIN{ extension("./OpenCV-AWK.so", "dlload") }'
+	mv OpenCV-AWK.so sample/
 
 OpenCV-AWK.so: OpenCV-AWK.c makefile
 	${CC} $< ${CFLAGS}

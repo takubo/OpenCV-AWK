@@ -3,8 +3,25 @@
 BEGIN {
     extension("./OpenCV-AWK.so", "dlload")
 
-    w = 640
-    h = 480
+    switch (ARGV[1]) {
+    case "qvga":
+	w = 320
+	h = 240
+	break
+    case "vga":
+	w = 640
+	h = 480
+	break
+    case "sxga":
+	w = 1280
+	h = 1024
+	break
+    case "svga":
+    default:
+	w = 1024
+	h = 768
+	break
+    }
 
     #capture = cvCreateCameraCapture()
     capture = cvCaptureFromCAM()
@@ -58,7 +75,7 @@ BEGIN {
 	    cvCircle(show, cx, cy, 80, "#ff0000", 3, "AA", 0)
 	cvShowImage("Capture", show)
 	cvWriteFrame(vw, image)
-	c = cvWaitKey(5)
+	c = cvWaitKey(2)
 	if (c == 0x1b) {
 	    break
 	} else if (c == ascii("q")) {
