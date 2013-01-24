@@ -1558,6 +1558,19 @@ do_acvGetImgHeight(int nags)
 	return make_number((AWKNUM) img->height);
 }
 
+static NODE *
+do_acvGetImgDataPointer(int nags)
+{
+	NODE *tmp;
+	IplImage *img;
+
+	tmp = (NODE *) get_scalar_argument(0, FALSE);
+	force_string(tmp);
+	img = lookup_image(tmp->stptr);
+
+	return make_number((AWKNUM) img->imageData);
+}
+
 
 
 /**********/
@@ -1616,6 +1629,7 @@ dlload(NODE *tree, void *dl)
 	make_builtin("acvGetImgHead", do_acvGetImgHead, 2);
 	make_builtin("acvGetImgWidth", do_acvGetImgWidth, 1);
 	make_builtin("acvGetImgHeight", do_acvGetImgHeight, 1);
+	make_builtin("acvGetImgDataPointer", do_acvGetImgDataPointer, 1);
 	//make_builtin("acvDeleteFont", do_acvDeleteFont, 1);
 
 	return make_number((AWKNUM) 0);
