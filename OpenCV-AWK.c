@@ -1650,30 +1650,43 @@ do_acvDetectObjects(int nargs)
 
 	for (i = 0; i < (objs ? objs->total : 0); i++) {
 		CvRect *r = (CvRect *) cvGetSeqElem(objs, i);
+		NODE *sub;
 		NODE **elemval;
 
 		sprintf(full_index, "%d%.*sx", i,
 			(int) SUBSEP_node->var_value->stlen,
 			SUBSEP_node->var_value->stptr);
-		elemval  = assoc_lookup(array, make_string(full_index, strlen(full_index)), 0);
+		sub = make_string(full_index, strlen(full_index));
+		elemval  = assoc_lookup(array, sub, 0);
+		unref(*elemval);
+		unref(sub);
 		*elemval = make_number((AWKNUM) r->x);
 
 		sprintf(full_index, "%d%.*sy", i,
 			(int) SUBSEP_node->var_value->stlen,
 			SUBSEP_node->var_value->stptr);
-		elemval  = assoc_lookup(array, make_string(full_index, strlen(full_index)), 0);
+		sub = make_string(full_index, strlen(full_index));
+		elemval  = assoc_lookup(array, sub, 0);
+		unref(*elemval);
+		unref(sub);
 		*elemval = make_number((AWKNUM) r->y);
 
 		sprintf(full_index, "%d%.*swidth", i,
 			(int) SUBSEP_node->var_value->stlen,
 			SUBSEP_node->var_value->stptr);
-		elemval  = assoc_lookup(array, make_string(full_index, strlen(full_index)), 0);
+		sub = make_string(full_index, strlen(full_index));
+		elemval  = assoc_lookup(array, sub, 0);
+		unref(*elemval);
+		unref(sub);
 		*elemval = make_number((AWKNUM) r->width);
 
 		sprintf(full_index, "%d%.*sheight", i,
 			(int) SUBSEP_node->var_value->stlen,
 			SUBSEP_node->var_value->stptr);
-		elemval  = assoc_lookup(array, make_string(full_index, strlen(full_index)), 0);
+		sub = make_string(full_index, strlen(full_index));
+		elemval  = assoc_lookup(array, sub, 0);
+		unref(*elemval);
+		unref(sub);
 		*elemval = make_number((AWKNUM) r->height);
 	}
 
