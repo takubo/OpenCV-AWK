@@ -13,6 +13,11 @@ IplImage *img;
 //IplImage *frame;
 
 
+/* do_acvDetectObjects内で使用するstorage */
+/* 毎回メモリを確保したくないので、静的に確保しておく。 */
+/* その代り、non-reentrant */
+CvMemStorage *detect_obj_storage;
+
 
 #define IMG_NUM 64
 #define CPT_NUM 8
@@ -1572,6 +1577,116 @@ do_acvGetImgDataPointer(int nags)
 }
 
 
+/***** Detect Object *****/
+
+static NODE *
+do_acvDetectObjects(int nargs)
+{
+	NODE *tmp, *array;
+	char *full_index;
+	size_t full_len;
+	int i;
+	IplImage *src_img;
+	IplImage *src_gray;
+	const char *cascade_name;
+	CvHaarClassifierCascade *cascade;
+	// CvMemStorage *storage; // TODO reentrant
+	CvSeq *objs;
+	double scale_factor;
+	int min_neighbors;
+	int flags;
+	int size_min_x, size_min_y, size_max_x, size_max_y;
+
+	// (1)画像を得る
+	tmp = (NODE *) get_scalar_argument(0, FALSE);
+	force_string(tmp);
+	src_img = lookup_image(tmp->stptr);
+	if( src_img == NULL ){
+		// TODO
+		fprintf(stderr, "no such file or directory\n");
+		exit(-1);
+	}
+	src_gray = cvCreateImage(cvGetSize(src_img), IPL_DEPTH_8U, 1);
+
+	// (2)ブーストされた分類器のカスケードを読み込む
+	tmp = (NODE *) get_scalar_argument(1, FALSE);
+	force_string(tmp);
+	cascade = (CvHaarClassifierCascade *) cvLoad(tmp->stptr, 0, 0, 0);
+
+	// (3)読み込んだ画像のグレースケール化，ヒストグラムの均一化を行う
+	// storage = cvCreateMemStorage(0); // TODO reentrant
+	// cvClearMemStorage(detect_obj_storage);
+	cvCvtColor(src_img, src_gray, CV_BGR2GRAY);
+	cvEqualizeHist(src_gray, src_gray);
+
+	// (4)物体（顔）検出
+	tmp           = (NODE *) get_scalar_argument(2, FALSE);
+	scale_factor  = (int) force_number(tmp);
+	tmp           = (NODE *) get_scalar_argument(3, FALSE);
+	min_neighbors = (int) force_number(tmp);
+	tmp           = (NODE *) get_scalar_argument(4, FALSE);
+	flags         = (int) force_number(tmp);
+	tmp           = (NODE *) get_scalar_argument(5, FALSE);
+	size_min_x    = (int) force_number(tmp);
+	tmp           = (NODE *) get_scalar_argument(6, FALSE);
+	size_min_y    = (int) force_number(tmp);
+	tmp           = (NODE *) get_scalar_argument(7, FALSE);
+	size_max_x    = (int) force_number(tmp);
+	tmp           = (NODE *) get_scalar_argument(8, FALSE);
+	size_max_y    = (int) force_number(tmp);
+
+	objs = cvHaarDetectObjects(src_gray, cascade, detect_obj_storage,
+			scale_factor, min_neighbors, flags;,
+			cvSize(size_min_x, size_min_y), cvSize(size_max_x, size_max_y));
+
+	// (5)検出された全ての位置をAWKの配列にコピーする
+	array = (NODE *) get_array_argument(9, FALSE);
+
+	full_len = 10 /* strlen(2^32) */
+		  + SUBSEP_node->var_value->stlen
+		  + 6  /* strlen("height") longer than x, y, width */
+		  + 1; /* string terminator */
+	emalloc(full_index, char *, full_len, "do_acvDetectObject");
+
+	for (i = 0; i < (objs ? objs->total : 0); i++) {
+		CvRect *r = (CvRect *) cvGetSeqElem(objs, i);
+		NODE **elemval;
+
+		sprintf(full_index, "%d%.*sx", i,
+			(int) SUBSEP_node->var_value->stlen,
+			SUBSEP_node->var_value->stptr);
+		elemval  = assoc_lookup(array, make_string(full_index, strlen(full_index)), 0);
+		*elemval = make_number((AWKNUM) r->x);
+
+		sprintf(full_index, "%d%.*sy", i,
+			(int) SUBSEP_node->var_value->stlen,
+			SUBSEP_node->var_value->stptr);
+		elemval  = assoc_lookup(array, make_string(full_index, strlen(full_index)), 0);
+		*elemval = make_number((AWKNUM) r->y);
+
+		sprintf(full_index, "%d%.*swidth", i,
+			(int) SUBSEP_node->var_value->stlen,
+			SUBSEP_node->var_value->stptr);
+		elemval  = assoc_lookup(array, make_string(full_index, strlen(full_index)), 0);
+		*elemval = make_number((AWKNUM) r->width);
+
+		sprintf(full_index, "%d%.*sheight", i,
+			(int) SUBSEP_node->var_value->stlen,
+			SUBSEP_node->var_value->stptr);
+		elemval  = assoc_lookup(array, make_string(full_index, strlen(full_index)), 0);
+		*elemval = make_number((AWKNUM) r->height);
+	}
+
+	efree(full_index);
+
+	cvReleaseImage(&src_gray);
+	cvClearMemStorage(detect_obj_storage);
+	// cvReleaseMemStorage (&storage);	// reentrant
+
+	return make_number((AWKNUM) obj->total);
+}
+
+
 
 /**********/
 /* dlload */
@@ -1631,6 +1746,11 @@ dlload(NODE *tree, void *dl)
 	make_builtin("acvGetImgHeight", do_acvGetImgHeight, 1);
 	make_builtin("acvGetImgDataPointer", do_acvGetImgDataPointer, 1);
 	//make_builtin("acvDeleteFont", do_acvDeleteFont, 1);
+	// Detect Object
+	make_builtin("acvDetectObjects", do_acvDetectObjects, 10);
+
+	/* TODO be reentrant */
+	detect_obj_storage = cvCreateMemStorage(0);
 
 	return make_number((AWKNUM) 0);
 }
