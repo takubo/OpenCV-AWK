@@ -432,13 +432,14 @@ str2iscolor(const char * str)
 		iscolor = CV_LOAD_IMAGE_COLOR;
 	} else if (strcmp(str, "GRAYSCALE") == 0) {
 		iscolor = CV_LOAD_IMAGE_GRAYSCALE;
-	} else if (strcmp(str, "UNCHANGED") == 0) {
-		iscolor = CV_LOAD_IMAGE_UNCHANGED;
+	} else if (strcmp(str, "ANYCOLOR") == 0) {
+		iscolor = CV_LOAD_IMAGE_ANYCOLOR;
 	} else if ((strcmp(str, "") == 0) || (strcmp(str, "0") == 0)) {
-		iscolor = CV_LOAD_IMAGE_UNCHANGED;
+		iscolor = CV_LOAD_IMAGE_ANYCOLOR;
 	} else {
 		_fatal(); //TODO
 	}
+	// TODO ANY_DEPTH
 
 	return iscolor;
 }
