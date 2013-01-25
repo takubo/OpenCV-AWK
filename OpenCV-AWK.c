@@ -1473,7 +1473,6 @@ do_CV_RGB(int nags)
 
 
 
-
 /*********/
 /* AwkCV */
 /*********/
@@ -1688,6 +1687,22 @@ do_acvDetectObjects(int nargs)
 
 
 
+/***********/
+/* Utility */
+/***********/
+
+
+static NODE *
+do_round(int nargs)
+{
+	NODE *tmp;
+
+	tmp = (NODE*) get_scalar_argument(0, FALSE);
+	return make_number((AWKNUM) cvRoud((double) force_number(tmp)) 0);
+}
+
+
+
 /**********/
 /* dlload */
 /**********/
@@ -1748,9 +1763,13 @@ dlload(NODE *tree, void *dl)
 	//make_builtin("acvDeleteFont", do_acvDeleteFont, 1);
 	// Detect Object
 	make_builtin("acvDetectObjects", do_acvDetectObjects, 10);
+	//////// Utility
+	make_builtin("round", do_round, 1);
+
 
 	/* TODO be reentrant */
 	detect_obj_storage = cvCreateMemStorage(0);
+
 
 	return make_number((AWKNUM) 0);
 }
