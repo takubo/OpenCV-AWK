@@ -1573,11 +1573,31 @@ do_acvGetImgDataPointer(int nags)
 	force_string(tmp);
 	img = lookup_image(tmp->stptr);
 
-	return make_number((AWKNUM) img->imageData);
+	return make_number((AWKNUM) (int) &img->imageData);
 }
 
 
 /***** Detect Object *****/
+
+int
+str2flags(const char *str)
+{
+	int flags = 0;
+
+	// 3 is strlen("CV_")
+	if (strncmp(str, "CV_", 3) == 0) { str += 3; }
+
+	// 5 is strlen("HAAR_")
+	if (strncmp(str, "HAAR_", 5) == 0) { str += 5; }
+
+	if (strcmp(str, "DO_CANNY_PRUNING") ) {
+		flags = CV_HAAR_DO_CANNY_PRUNING;
+	} else {
+		flags = 0;
+	}
+
+	return flags;
+}
 
 static NODE *
 do_acvDetectObjects(int nargs)
@@ -1621,26 +1641,32 @@ do_acvDetectObjects(int nargs)
 
 	// (4)物体（顔）検出
 	tmp           = (NODE *) get_scalar_argument(2, FALSE);
-	scale_factor  = (int) force_number(tmp);
+	scale_factor  = (double) force_number(tmp);
+
 	tmp           = (NODE *) get_scalar_argument(3, FALSE);
 	min_neighbors = (int) force_number(tmp);
+
 	tmp           = (NODE *) get_scalar_argument(4, FALSE);
-	flags         = (int) force_number(tmp);
+	flags         = str2flags(tmp->stptr);
+
 	tmp           = (NODE *) get_scalar_argument(5, FALSE);
 	size_min_x    = (int) force_number(tmp);
 	tmp           = (NODE *) get_scalar_argument(6, FALSE);
 	size_min_y    = (int) force_number(tmp);
+
 	tmp           = (NODE *) get_scalar_argument(7, FALSE);
 	size_max_x    = (int) force_number(tmp);
 	tmp           = (NODE *) get_scalar_argument(8, FALSE);
 	size_max_y    = (int) force_number(tmp);
 
 	objs = cvHaarDetectObjects(src_gray, cascade, detect_obj_storage,
-			scale_factor, min_neighbors, flags;,
+			scale_factor, min_neighbors, flags,
 			cvSize(size_min_x, size_min_y), cvSize(size_max_x, size_max_y));
 
 	// (5)検出された全ての位置をAWKの配列にコピーする
 	array = (NODE *) get_array_argument(9, FALSE);
+
+	assoc_clear(array);
 
 	full_len = 10 /* strlen(2^32) */
 		  + SUBSEP_node->var_value->stlen
@@ -1696,7 +1722,7 @@ do_acvDetectObjects(int nargs)
 	cvClearMemStorage(detect_obj_storage);
 	// cvReleaseMemStorage (&storage);	// reentrant
 
-	return make_number((AWKNUM) obj->total);
+	return make_number((AWKNUM) objs->total);
 }
 
 
@@ -1711,8 +1737,8 @@ do_round(int nargs)
 {
 	NODE *tmp;
 
-	tmp = (NODE*) get_scalar_argument(0, FALSE);
-	return make_number((AWKNUM) cvRoud((double) force_number(tmp)) 0);
+	tmp = (NODE *) get_scalar_argument(0, FALSE);
+	return make_number((AWKNUM) cvRound((double) force_number(tmp)));
 }
 
 

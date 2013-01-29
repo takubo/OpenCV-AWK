@@ -3,6 +3,8 @@
 BEGIN {
     extension("./OpenCV-AWK.so", "dlload")
 
+    cascade_name = "haarcascade_frontalface_default.xml"
+
     switch (ARGV[1]) {
     case "qvga":
 	w = 320
@@ -18,8 +20,8 @@ BEGIN {
 	break
     case "svga":
     default:
-	w = 1024
-	h = 768
+	w = 640
+	h = 480
 	break
     }
 
@@ -73,6 +75,24 @@ BEGIN {
 	#print show
 	if (circle)
 	    cvCircle(show, cx, cy, 80, "#ff0000", 3, "AA", 0)
+
+	# 二値化モード時は、顔認識できない。
+	if (face_detect && show == frame) {
+	    num = acvDetectObjects(show, cascade_name, 1.3, 2, "DO_CANNY_PRUNING",
+		    max(40, w * 0.05),
+		    max(40, h * 0.05),
+		    w * 0.35, h * 0.35, faces)
+
+	    for (j = 0; j < num; j++) {
+		#center_x = round(faces[j, "x"] + faces[j, "width"] * 0.5)
+		#center_y = round(faces[j, "y"] + faces[j, "height"] * 0.5)
+		#radius = round((faces[j, "width"] + faces[j, "height"]) * 0.25)
+		#cvCircle(show, center_x, center_y, radius, "#00ff00", 2, 8, 0)
+		cvRectangle(show, faces[j, "x"], faces[j, "y"], faces[j, "x"] + faces[j, "width"], faces[j, "y"] + faces[j, "height"], "#ff00ff", 2, 8, 0)
+			#"#ff00ff", 2, 8, 0)
+	    }
+	}
+
 	cvShowImage("Capture", show)
 	cvWriteFrame(vw, image)
 	c = cvWaitKey(2)
@@ -83,13 +103,13 @@ BEGIN {
 	} else if ( c == ascii("g") || c == ascii("b") || c == ascii("t") || c == ascii("z") || c == ascii("c")) {
 	    conv = substr(char(c), 1, 1)
 	} else if (c == ascii("\n")) {
-	    cvSaveImage("_cam_on_awk_.jpeg", frame, 0);
-	} else if (c == ascii("\t")) {
-	    cvSaveImage("_cam_on_awk_.jpeg", frame, 0);
-	} else if (c == ascii(" ")) {
 	    cvSaveImage("_cam_on_awk_"rand()".jpeg", show, 0);
 	    cvNamedWindow("")
 	    cvShowImage("", show);
+	} else if (c == ascii("\t")) {
+	    cvSaveImage("_cam_on_awk_.jpeg", frame, 0);
+	} else if (c == ascii(" ")) {
+	    face_detect = !face_detect
 	}
     }
 
@@ -112,3 +132,4 @@ function onmouse(event, x, y, flaggs, paam)
 }
 
 
+function max(a, b) { return (a > b) ? a : b }
